@@ -3,13 +3,19 @@
 #include <mutex>
 #include <vector>
 
-#include "concurent_queue.hpp"
+#include "./deps/helpers/concurent_queue.hpp"
 #include "thread.hpp"
+
+namespace Threading
+{
 
 template <typename T>
 class ThreadPool {
+    static_assert(requires{ T{}.pop()(); }, "Task queue is required to implement pop method returning callable without parameters");
+
 public:
     using Worker = void(*)(T&);
+    using TaskQueue = T;
 
     ThreadPool(T& task_queue) : m_task_queue{task_queue} {}
 
@@ -39,3 +45,8 @@ public:
 private:
     T& m_task_queue;
 };
+
+}  //namespace Threading
+
+template<typename Task>
+using ThreadPool = Threading::ThreadPool<ConcurrentQueue<Task>>;

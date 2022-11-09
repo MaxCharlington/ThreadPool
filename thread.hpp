@@ -2,6 +2,9 @@
 
 #include <thread>
 
+namespace Threading
+{
+
 class Thread
 {
 public:
@@ -33,3 +36,5 @@ private:
 
     std::jthread m_thread;
 };
+
+}  //namespace Threading
