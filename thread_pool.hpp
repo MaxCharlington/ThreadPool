@@ -1,66 +1,41 @@
 #pragma once
 
-#include <algorithm>
-#include <functional>
 #include <mutex>
-#include <queue>
-#include <thread>
 #include <vector>
 
-template <typename T>
-class ConcurentQueue {
-    std::mutex m_mut;
-    std::queue<T> m_q;
+#include "concurent_queue.hpp"
+#include "thread.hpp"
 
+template <typename T>
+class ThreadPool {
 public:
-    using value_type = T;
+    using Worker = void(*)(T&);
 
-    ConcurentQueue() = default;
-    ConcurentQueue(const ConcurentQueue& other) : m_mut{}, m_q{other.m_q} {}
+    ThreadPool(T& task_queue) : m_task_queue{task_queue} {}
 
-    void push(T el) {
-        std::lock_guard lk{m_mut};
-        m_q.push(el);
-    }
-
-    T pop() {
-        std::lock_guard lk{m_mut};
-        if (m_q.size() > 0) {
-            auto ret = m_q.front();
-            m_q.pop();
-            return ret;
-        }
-        else {
-            return T{};
-        }
-    }
-};
-
-template <typename T>
-static void worker(ConcurentQueue<T>& task_queue){
-    while (true) {
-        auto task = task_queue.pop();
-        if (task) task();
-        else break;
-    }
-};
-
-
-template <typename T>
-class ThreadPoolImpl {
-    T m_task_queue;
-
-public:
-    ThreadPoolImpl(const T& task_queue)
-        : m_task_queue{task_queue}
-    {}
-
-    template <typename QueueItem>
-    void run(void(*worker)(ConcurentQueue<QueueItem>&)) {
+    void run(Worker worker = &ThreadPool::worker)
+    {
         const auto system_thread_count = std::thread::hardware_concurrency();
-        std::vector<std::thread> pool{system_thread_count - 2u};
-        std::for_each(pool.begin(), pool.end(),
-            [&](auto& thread){ thread = std::thread{worker, std::ref(m_task_queue)}; });
-        std::for_each(pool.begin(), pool.end(), [&](auto& thread){ thread.join(); });
+
+        std::vector<Thread> pool;
+        pool.reserve(system_thread_count - 2u);
+
+        for (unsigned thread_i = 0; thread_i < system_thread_count; thread_i++)
+        {
+            pool.emplace_back(worker, m_task_queue, thread_i);
+        }
     }
+
+    static void worker(T& task_queue)
+    {
+        while (true)
+        {
+            auto task = task_queue.pop();
+            if (task) task();
+            else break;
+        }
+    };
+
+private:
+    T& m_task_queue;
 };
