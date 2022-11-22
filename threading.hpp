@@ -9,10 +9,14 @@
 namespace Threading
 {
 
-template <typename T>
-class ThreadPool {
-    static_assert(requires{ T{}.pop()(); }, "Task queue is required to implement pop method returning callable without parameters");
+template<typename TaskQ>
+concept TaskQueueC = requires(TaskQ q){
+    { q.pop() } -> std::convertible_to<bool>;
+    { q.pop().value()() };
+};
 
+template <TaskQueueC T>
+class ThreadPool {
 public:
     using Worker = void(*)(T&);
     using TaskQueue = T;
@@ -37,7 +41,7 @@ public:
         while (true)
         {
             auto task = task_queue.pop();
-            if (task) task();
+            if (task) task.value()();
             else break;
         }
     };
