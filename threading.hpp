@@ -9,13 +9,13 @@
 namespace Threading
 {
 
-template<typename TaskQ>
-concept TaskQueueC = requires(TaskQ q){
-    { q.pop() } -> std::convertible_to<bool>;
-    { q.pop().value()() };
-};
+// template<typename TaskQ>
+// concept TaskQueueC = requires(TaskQ q){
+//     { q.pop() } -> std::convertible_to<bool>;
+//     { q.pop().value()() };
+// };
 
-template <TaskQueueC T>
+template <typename T>
 class ThreadPool {
 public:
     using Worker = void(*)(T&);
