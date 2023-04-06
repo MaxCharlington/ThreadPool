@@ -15,7 +15,7 @@ namespace Threading
 //     { q.pop().value()() };
 // };
 
-template <typename T>
+template <typename T, std::size_t ThreadCount = 0>
 class ThreadPool {
 public:
     using Worker = void(*)(T&);
@@ -25,12 +25,12 @@ public:
 
     void run(Worker worker = &ThreadPool::worker)
     {
-        const auto system_thread_count = std::thread::hardware_concurrency();
+        const auto thread_cnt = (ThreadCount == 0) ? (std::thread::hardware_concurrency() - 2u) : ThreadCount;
 
         std::vector<Thread> pool;
-        pool.reserve(system_thread_count - 2u);
+        pool.reserve(thread_cnt);
 
-        for (unsigned thread_i = 0; thread_i < system_thread_count; thread_i++)
+        for (unsigned thread_i = 0; thread_i < thread_cnt; thread_i++)
         {
             pool.emplace_back(worker, m_task_queue, thread_i);
         }

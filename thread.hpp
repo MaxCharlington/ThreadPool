@@ -12,7 +12,9 @@ public:
     Thread(Job&& job, Arg& arg, unsigned core, int policy = SCHED_RR, int priority = 99)
         : m_thread{std::forward<Job>(job), std::ref(arg)}
     {
+#ifndef IGNORE_BIND_CORE
         bind_core(core);
+#endif
         set_priority(policy, priority);
     }
 
